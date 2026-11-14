@@ -16,7 +16,7 @@ function status(s,bad=false){$('status').textContent=s;$('status').className='st
 function yieldUI(){return new Promise(resolve=>setTimeout(resolve,30));}
 function pix(ctx,x,y){let d=ctx.getImageData(Math.max(0,Math.round(x)),Math.max(0,Math.round(y)),1,1).data;return [d[0],d[1],d[2]]}
 function normalizeGlyph(ctx,x,y,s){
- const left=Math.round(x+s*.13),top=Math.round(y+s*.13),ww=Math.max(1,Math.round(s*.76)),hh=ww;
+ const left=Math.round(x+s*.13),top=Math.round(y+s*.15),ww=Math.max(1,Math.round(s*.57)),hh=Math.max(1,Math.round(s*.68));
  if(left<0||top<0||left+ww>ctx.canvas.width||top+hh>ctx.canvas.height)return null;
  let im=ctx.getImageData(left,top,ww,hh).data,pts=[];
  for(let py=0;py<hh;py++)for(let px=0;px<ww;px++){
@@ -54,14 +54,14 @@ async function analyze(file){
   $('result').classList.add('hidden');$('problem').classList.add('hidden');status('Öppnar bilden …');await yieldUI();
   if(!file||!file.type.startsWith('image/'))throw Error('Välj en bildfil.');
   const im=await imageFromFile(file);if(im.width<450||im.height<850)throw Error('Bilden är för liten för säker avläsning.');
-  // All geometry relative to the original reference screenshot. This is a calibrated prototype, not a universal layout detector.
+  // Calibrated to the November 14 dark Wordfeud screenshot layout. Other themes may not work.
   const cv=$('work');cv.width=im.width;cv.height=im.height;const ctx=cv.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0);
   let scaleX=im.width/1179,scaleY=im.height/2556;
   if(Math.abs(scaleX/scaleY-1)>.14)throw Error('Bildens proportioner skiljer sig från exemplet. Använd en hel Wordfeud-skärmbild utan beskärning.');
   status('Läser 225 rutor på spelplanen …');await yieldUI();board=Array.from({length:15},()=>Array(15).fill(''));uncertain.clear();let found=0;
   for(let row=0;row<15;row++){
    for(let col=0;col<15;col++){
-    let x=(25+col*75.5)*scaleX,y=(207+row*75.5)*scaleY,s=75.5*Math.min(scaleX,scaleY);
+    let x=(col*78.55)*scaleX,y=(759+row*78.55)*scaleY,s=78.55*Math.min(scaleX,scaleY);
     if(!isTile(ctx,x,y,s))continue;
     let res=match(normalizeGlyph(ctx,x,y,s));if(!res.letter)continue;
     board[row][col]=res.letter;found++;
@@ -72,7 +72,7 @@ async function analyze(file){
   status('Läser dina sju brickor …');await yieldUI();
   rack=[];
   for(let i=0;i<7;i++){
-   let x=(146+i*130.5)*scaleX,y=1381*scaleY,s=106*Math.min(scaleX,scaleY);
+   let x=(18+i*164.5)*scaleX,y=2114*scaleY,s=144*Math.min(scaleX,scaleY);
    rack.push(match(normalizeGlyph(ctx,x,y,s)).letter||'?');
   }
   status('Klart! Jag hittade '+found+' bokstäver. Kontrollera och tryck Hitta bästa drag.');render();$('result').classList.remove('hidden');$('result').scrollIntoView({behavior:'smooth',block:'start'});
